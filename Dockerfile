@@ -7,6 +7,8 @@ ENV STEEM_STATIC_BUILD ${STEEM_STATIC_BUILD}
 
 ENV LANG=en_US.UTF-8
 
+RUN exit 1
+
 RUN \
     apt-get update && \
     apt-get install -y \
