@@ -38,7 +38,7 @@ int64_t compute_rc_cost_of_resource(
    int64_t current_pool,
    int64_t resource_count );
 
-} } }
+} } } // steem::plugins::rc
 
 FC_REFLECT_ENUM( steem::plugins::rc::rc_time_unit_type, (rc_time_unit_seconds)(rc_time_unit_blocks) )
 FC_REFLECT( steem::plugins::rc::rc_curve_params, (coeff_a)(coeff_b)(coeff_d) )
