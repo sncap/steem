@@ -20,19 +20,12 @@ enum rc_resource_types
    resource_market_bytes
 };
 
-struct account_creation
-{
-   account_name_type creator;
-   account_name_type created;
-};
-
 typedef fc::array< int64_t, STEEM_NUM_RESOURCE_TYPES > resource_count_type;
 
 struct count_resources_result
 {
    int32_t                                        market_op_count = 0;
    int32_t                                        new_account_op_count = 0;
-   std::vector< account_creation >                account_creations;
    resource_count_type                            resource_count;
 };
 

@@ -5,12 +5,6 @@
 
 namespace steem { namespace plugins { namespace rc {
 
-struct account_creation
-{
-   account_name_type creator;
-   account_name_type created;
-};
-
 struct count_operation_visitor
 {
    typedef void result_type;
@@ -32,15 +26,9 @@ struct count_operation_visitor
    { state.market_op_count++; }
 
    void operator()( const account_create_operation& op )const
-   {
-      state.new_account_op_count++;
-      state.account_creations.emplace_back( op.creator, op.new_account_name );
-   }
+   { state.new_account_op_count++; }
    void operator()( const account_create_with_delegation_operation& op )const
-   {
-      state.new_account_op_count++;
-      state.account_creations.emplace_back( op.creator, op.new_account_name );
-   }
+   { state.new_account_op_count++; }
 
    // TODO:
    // Should following ops be market ops?
