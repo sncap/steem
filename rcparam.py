@@ -35,6 +35,7 @@ def compute_parameters(args):
     compound_per_sec_denom = 2**compound_per_sec_denom_shift
     compound_per_sec = int(compound_per_sec_float * compound_per_sec_denom)
     result["compound_per_sec"] = compound_per_sec
+    result["compound_per_sec_denom_shift"] = compound_per_sec_denom_shift
 
     # For numerical correctness of decay, half-life should be one year or less,
     # and the smallest stockpile size should be 2**32 or more
@@ -47,17 +48,25 @@ def compute_parameters(args):
     # stockpile + budget_per_sec - compound_per_sec_float * stockpile = stockpile
     # stockpile = budget_per_sec / compound_per_sec_float
 
-    if "unit_bits" in args:
-        unit_bits = args["unit_bits"]
+    if "resource_unit_base" in args:
+        resource_unit_base = args["resource_unit_base"]
     else:
-        # If necessary, add unit_bits until the equilibrium stockpile size is just above small_stockpile_size
-        pool_eq = budget_per_sec / compound_per_sec_float
-        unit_bits_float = math.log( small_stockpile_size / pool_eq ) / math.log(2)
-        unit_bits = max(0, int(math.ceil(unit_bits_float)))
+        resource_unit_base = 10
 
-    result["unit_bits"] = unit_bits
-    unit = 1 << unit_bits
-    pool_eq = (budget_per_sec*unit) / compound_per_sec_float
+    result["resource_unit_base"] = resource_unit_base
+
+    if "resource_unit_exponent" in args:
+        resource_unit_exponent = args["resource_unit_exponent"]
+    else:
+        # If necessary, increment resource_unit_exponent until the equilibrium stockpile size is just above small_stockpile_size
+        pool_eq = budget_per_sec / compound_per_sec_float
+        resource_unit_exponent_float = math.log( small_stockpile_size / pool_eq ) / math.log(resource_unit_base)
+        resource_unit_exponent = max(0, int(math.ceil(resource_unit_exponent_float)))
+
+    result["resource_unit_exponent"] = resource_unit_exponent
+    resource_unit = resource_unit_base**resource_unit_exponent
+    pool_eq = (budget_per_sec*resource_unit) / compound_per_sec_float
+    result["pool_eq"] = pool_eq
 
     #(n choose 1) = n
     #(n choose 2) = n(n-1) / 2
@@ -69,7 +78,8 @@ def compute_parameters(args):
     global_rc_regen = 400 * 10**9
     rc_regen_time_sec = 15*24*60*60
     global_rc_capacity = global_rc_regen * rc_regen_time_sec
-    p_bb = global_rc_regen / (budget*unit)
+    # price to burn only the budget
+    p_bb = global_rc_regen / (budget*resource_unit)
     p_0 = p_bb * (1.0 + rc_regen_time_sec / drain_time_sec)
 
     result["p_0"] = p_0
@@ -96,6 +106,7 @@ def demo():
          "budget" : 5*10**9,
          "half_life" : {"days" : 15},
          "drain_time" : {"hours" : 1},
+         "p_min" : 100.0,
         })
     print(json.dumps(result, indent=1))
 
