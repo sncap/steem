@@ -1,0 +1,31 @@
+[
+ ["resource_history_bytes",
+  {
+   "budget_time" : {"days" : 30},
+   "budget" : 5000000000,
+   "half_life" : {"days" : 15},
+   "drain_time" : {"hours" : 1},
+   "p_min" : 100.0
+  }
+ ],
+
+ ["resource_new_accounts",
+  {
+   "budget_time" : {"days" : 30},
+   "budget" : 1000000,
+   "half_life" : {"days" : 20},
+   "drain_time" : {"hours" : 1},
+   "p_min" : 1000.0
+  }
+ ],
+
+ ["resource_market_bytes",
+  {
+   "budget_time" : {"days" : 30},
+   "budget" : 400000000,
+   "half_life" : {"hours" : 16},
+   "drain_time" : {"hours" : 1},
+   "p_min" : 500.0
+  }
+ ]
+]

@@ -16,21 +16,20 @@ int64_t compute_rc_cost_of_resource(
    num *= curve_params.coeff_a;
    uint128_t denom = uint128_t( curve_params.coeff_b );
 
-   if( current_pool < 0 )
-   {
-      // Clamp B+x to 1 in case x is large and negative
-      uint64_t sub = uint64_t(-current_pool);
-      if( sub >= curve_params.coeff_b )
-          sub = curve_params.coeff_b-1;
-      denom -= sub;
-   }
-   else
-      denom += current_pool;
+   // Negative pool doesn't increase price beyond p_max
+   //   i.e. define p(x) = p(0) for all x < 0
+   denom += (current_pool > 0) ? uint64_t(current_pool) : uint64_t(0);
    uint128_t num_denom = num / denom;
+   uint128_t discount = uint128_t( resource_count );
+   discount *= curve_params.coeff_d;
    // Clamp A / (B+x) - D to 1 in case D is too big
-   if( num_denom <= curve_params.coeff_d )
+   if( num_denom <= discount )
       return 1;
-   return num_denom - curve_params.coeff_d;
+   uint128_t num_denom_minus_discount = (num_denom - discount).to_uint64();
+   num_denom_minus_discount >>= curve_params.shift;
+   // Add 1 to avoid 0 result in case of various rounding issues,
+   // err on the side of rounding not in the user's favor
+   return result+1;
 }
 
 } } }

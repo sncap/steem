@@ -49,6 +49,7 @@ class rc_pool_object : public object< rc_pool_object_type, rc_pool_object >
       id_type               id;
       fc::array< int64_t, STEEM_NUM_RESOURCE_TYPES >
                             pool_array;
+      time_point_sec        last_update;
 };
 
 class rc_account_object : public object< rc_account_object_type, rc_account_object >

@@ -21,6 +21,7 @@ class rc_plugin_impl
 
       void on_post_apply_transaction( const transaction_notification& note );
       void on_post_apply_block( const block_notification& note );
+      void on_first_block();
 
       database&                     _db;
       rc_plugin&                    _self;
@@ -198,7 +199,13 @@ void rc_plugin_impl::on_post_apply_block( const block_notification& note )
    const global_property_object& gpo = _db.get_dynamic_global_properties();
 
    if( gpo.total_vesting_shares.amount <= 0 )
+   {
+      if( gpo.head_block_number == 1 )
+      {
+         on_first_block();
+      }
       return;
+   }
 
    // How many resources does the transaction use?
    count_resources_result_type count;
@@ -246,9 +253,30 @@ struct rc_resource_params
          {
             const rc_params& params = params_obj[i];
             int64_t& pool = pool_obj.pool_array[i];
-            pool += params.
+
+            dt = 
+
+            int64_t budget = params.budget_per_time_unit;
+            budget *= dt
          }
       } );
+}
+
+void rc_plugin_impl::on_first_block()
+{
+   db.create< rc_resource_param_object >(
+      []( rc_resource_param_object& params_obj )
+      {
+         
+      } );
+   db.create< rc_pool_object >(
+      []( rc_pool_object& pool_obj )
+      {
+         for( size_t i=0; i<STEEM_NUM_RESOURCE_TYPES; i++ )
+            pool_obj.pool_array[i] = 0;
+         pool_obj.last_update = db.get_dynamic_global_properties().time;
+      } );
+   return;
 }
 
 } // detail

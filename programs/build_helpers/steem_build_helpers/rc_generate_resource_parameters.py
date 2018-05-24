@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 
+from .buildj2 import overwrite_if_different
+
 import argparse
 import collections
 import datetime
 import json
 import math
+import os
+import sys
 
 def compute_parameters(args):
     result = collections.OrderedDict()
+
+    time_unit = args.get("time_unit", "seconds")
+    result["time_unit"] = time_unit
+
+    if time_unit == "seconds":
+        time_unit_sec = 1
+    else:
+        time_unit_sec = args.get("block_interval", 3)
 
     budget_time = datetime.timedelta(**args["budget_time"])
     budget      = args["budget"]
@@ -48,8 +60,6 @@ def compute_parameters(args):
     # stockpile + budget_per_sec - compound_per_sec_float * stockpile = stockpile
     # stockpile = budget_per_sec / compound_per_sec_float
 
-    result["budget_per_sec"] = budget_per_sec
-
     if "resource_unit_base" in args:
         resource_unit_base = args["resource_unit_base"]
     else:
@@ -67,7 +77,15 @@ def compute_parameters(args):
 
     result["resource_unit_exponent"] = resource_unit_exponent
     resource_unit = resource_unit_base**resource_unit_exponent
-    pool_eq = (budget_per_sec*resource_unit) / compound_per_sec_float
+    p_min /= resource_unit
+
+    budget_per_sec *= resource_unit
+    budget_per_time_unit = budget_per_sec * time_unit_sec
+
+    result["budget_per_sec"] = int(budget_per_sec+0.5)
+    result["budget_per_time_unit"] = int(budget_per_time_unit+0.5)
+
+    pool_eq = budget_per_sec / compound_per_sec_float
     result["pool_eq"] = pool_eq
 
     #(n choose 1) = n
@@ -81,7 +99,7 @@ def compute_parameters(args):
     rc_regen_time_sec = 15*24*60*60
     global_rc_capacity = global_rc_regen * rc_regen_time_sec
     # price to burn only the budget
-    p_bb = global_rc_regen / (budget*resource_unit)
+    p_bb = global_rc_regen / (budget_per_sec * rc_regen_time_sec)
     p_0 = p_bb * (1.0 + rc_regen_time_sec / drain_time_sec)
 
     result["p_0"] = p_0
@@ -93,23 +111,50 @@ def compute_parameters(args):
     B = inelasticity_threshold * pool_eq
     D = (B / pool_eq) * (p_0 - p_min) - p_min
     A = B*(p_0+D)
+    if (A < 1.0) or (B < 1.0):
+        raise RuntimeError("Bad parameter value (is p_min too large?)")
+
     result["D"] = D
     result["B"] = B
     result["A"] = A
     result["p_min"] = A / (B + pool_eq) - D
 
+    curve_shift_float = math.log( (2.0**64-1) / A ) / math.log(2)
+    curve_shift = int(math.floor(curve_shift_float))
+
+    result["curve_params"] = collections.OrderedDict()
+    result["curve_params"]["coeff_a"] = str(int(A*(2.0**curve_shift)+0.5))
+    result["curve_params"]["coeff_b"] = str(int(B+0.5))
+    result["curve_params"]["coeff_d"] = str(int(D*(2.0**curve_shift)+0.5))
+    result["curve_params"]["shift"] = curve_shift
+
+    result["decay_params"] = collections.OrderedDict()
+    result["decay_params"]["decay_per_time_unit"] = 
+
     return result
 
-def demo():
-    result = compute_parameters(
-        {
-         "budget_time" : {"days" : 30},
-         "budget" : 5*10**9,
-         "half_life" : {"days" : 15},
-         "drain_time" : {"hours" : 1},
-         "p_min" : 100.0,
-        })
-    print(json.dumps(result, indent=1))
+parser = argparse.ArgumentParser( description="Build the manifest library" )
+parser.add_argument( "--input", "-i", type=str, default="-", help="Filename of resource input" )
+parser.add_argument( "--output", "-o", type=str, default="-", help="Filename of JSON context file" )
+args = parser.parse_args()
 
-if __name__ == "__main__":
-    demo()
+if args.input == "-":
+    json_input = sys.stdin.read()
+else:
+    with open(args.input, "r") as f:
+        json_input = f.read()
+
+indata = json.loads(json_input)
+
+outdata = []
+for resource_type, resource_args in indata:
+    outdata.append([resource_type, compute_parameters(resource_args)])
+
+json_output = json.dumps( outdata, separators=(",", ":"), indent=1 )
+
+if args.output == "-":
+    sys.stdout.write(json_output)
+    sys.stdout.flush()
+else:
+    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    overwrite_if_different( args.output, json_output )
