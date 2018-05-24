@@ -1,6 +1,7 @@
 [
  ["resource_history_bytes",
   {
+   "time_unit" : "blocks",
    "budget_time" : {"days" : 30},
    "budget" : 5000000000,
    "half_life" : {"days" : 15},
@@ -11,6 +12,7 @@
 
  ["resource_new_accounts",
   {
+   "time_unit" : "seconds",
    "budget_time" : {"days" : 30},
    "budget" : 1000000,
    "half_life" : {"days" : 20},
@@ -21,6 +23,7 @@
 
  ["resource_market_bytes",
   {
+   "time_unit" : "blocks",
    "budget_time" : {"days" : 30},
    "budget" : 400000000,
    "half_life" : {"hours" : 16},
